@@ -200,27 +200,18 @@ def test_rebel_manifests_are_prompt_disjoint_and_stratified(smoke_artifacts_dir,
 
 # ----------------------------------------------------------------------------- configs
 
-def test_arm_configs_share_common_hyperparameters_and_eta_is_not_the_lr():
+def test_rebel_arm_configs_share_common_hyperparameters_and_eta_is_not_the_lr():
     from saferl.train_rebel import COMMON_POLICY_KEYS
-    cfgs = {a: load_config(str(ROOT / "configs" / f)) for a, f in (("scalar", "rebel_scalar.yaml"), ("shared", "rebel_shared_constrained.yaml"), ("separate", "rebel_separate_constrained.yaml"))}
+    cfgs = {a: load_config(str(ROOT / "configs" / "sixarm" / f"{a}.yaml")) for a in ("arm0_rebel_separate_d1", "arm1_rebel_separate_d0", "arm2_rebel_scalar")}
     for k in COMMON_POLICY_KEYS:
-        vals = {json.dumps(c[k], sort_keys=True) for c in cfgs.values()}
+        vals = {json.dumps(c.get(k), sort_keys=True) for c in cfgs.values()}
         assert len(vals) == 1, k
-    c = cfgs["scalar"]
-    assert c["rebel_eta"] != c["learning_rate"] and c["kl_to_initial_coef"] == 0 and c["d_std"] == -0.5 and c["lambda_init"] == 1.0 and c["dual_step_size"] == 0.01
+    c = cfgs["arm2_rebel_scalar"]
+    assert c["rebel_eta"] != c["learning_rate"] and c["lambda_init"] == 1.0 and c["dual_learning_rate"] == 0.01
     assert c["generation"]["temperature"] == 1.0 and c["generation"]["top_p"] == 1.0 and c["generation"]["max_completion_length"] == 512
     assert c["group_size"] == 8 and c["prompt_batch_size"] == 16 and c["pairs_per_minibatch"] == 32 and c["inner_epochs"] == 1
-    for a, cc in cfgs.items():
+    for cc in cfgs.values():
         assert all("_seed42/" in p for p in cc["scorer_checkpoints"].values()) and cc["scorer_rm_seed"] == 42
-    ev = load_config(str(ROOT / "configs" / "eval_rebel.yaml"))
-    for m in ("rebel_scalar", "rebel_shared", "rebel_separate"):
-        assert ev["methods"][m]["checkpoint_rule"] == "rebel_final_1_prompt_epoch" and ev["methods"][m]["seeds"] == [42]
-    assert ev["generation"] == load_config(str(ROOT / "configs" / "eval.yaml"))["generation"]
-    m = load_config(str(ROOT / "configs" / "grpo_matched_shared_constrained.yaml"))
-    g = load_config(str(ROOT / "configs" / "grpo_shared_constrained.yaml"))
-    for k in ("clip_epsilon", "beta_kl", "learning_rate", "group_size", "prompt_batch_size", "groups_per_minibatch", "generation"):
-        assert m[k] == g[k]
-    assert m["d_std"] == -0.5 and m["dual_step_size"] == 0.01
 
 
 # ----------------------------------------------------------------------------- tiny end-to-end (CPU)
@@ -343,24 +334,10 @@ def test_hard_failure_on_invalid_dual_and_gate_stop_resume(tokenizer, tiny_model
 
 @pytest.mark.hf
 @pytest.mark.artifacts
-def test_scalar_arm_has_no_dual_and_matched_grpo_uses_additive_dual_in_standardized_units(tokenizer, tiny_model, smoke_artifacts_dir, tmp_path):
-    from saferl.grpo_matched import GRPOMatchedTrainer
+def test_scalar_arm_has_no_dual(tokenizer, tiny_model, smoke_artifacts_dir, tmp_path):
     from saferl.train_rebel import REBELTrainer
 
     cfg, rep = _tiny_setup(tokenizer, tiny_model, smoke_artifacts_dir, tmp_path, "scalar")
     s = REBELTrainer({**cfg, "runs_dir": str(tmp_path / "runs_s"), "max_rollout_batches": 2}).train()
     rows = [json.loads(l) for l in open(Path(s["run_dir"]) / "rollout_batches.jsonl")]
     assert s["final_lambda"] is None and "lambda" not in rows[0] and "scalar_std_mean" in rows[0] and s["n_pairs"] == 8
-    cfg_sh, _ = _tiny_setup(tokenizer, tiny_model, smoke_artifacts_dir, tmp_path / "sh", "shared")
-    gbase = load_config(str(ROOT / "configs" / "grpo_smoke.yaml"))
-    gcfg = {**gbase, **{k: cfg_sh[k] for k in ("arm", "artifacts_dir", "policy_model", "device", "precision", "gradient_checkpointing", "attn_implementation", "generation",
-                                              "scorer_checkpoints", "calibration_file", "seed")},
-            "prompt_batch_size": 2, "group_size": 4, "groups_per_minibatch": 1, "policy_micro_batch_size": 4, "max_rollout_batches": 2, "eval_every_batches": 100,
-            "monitor_at_start": False, "resume_every_batches": 100, "learning_rate": 1e-3, "monitor_responses_per_prompt": 1, "monitor_gen_batch": 8,
-            "runs_dir": str(tmp_path / "runs_m"), "run_name": "matched", "d_std": -0.5, "lambda_init": 1.0, "dual_step_size": 0.01, "dual_projection": True}
-    sm = GRPOMatchedTrainer(gcfg).train()
-    mrows = [json.loads(l) for l in open(Path(sm["run_dir"]) / "rollout_batches.jsonl")]
-    for r in mrows:
-        assert math.isclose(r["lambda"], max(0.0, r["lambda_used"] + 0.01 * (r["cost_batch_mean"] - (-0.5))), rel_tol=1e-9) and r["d"] == -0.5
-    assert read_json(Path(sm["run_dir"]) / "config_resolved.json")["algorithm"] == "grpo_matched"
-    assert sm["n_prompts"] == 4 and sm["opt_step"] == 4

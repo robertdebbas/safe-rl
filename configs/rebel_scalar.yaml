@@ -1,8 +1,0 @@
-# Arm A: scalar REBEL on the frozen scalar RM F (standardized F~), no constraint.
-base: rebel_common.yaml
-arm: scalar
-run_name: rebel_scalar_qwen2.5-1.5b
-scorer_rm_seed: 42
-scorer_checkpoints:
-  scalar: runs/rm_scalar_qwen2.5-1.5b_seed42/checkpoints/best
-calibration_file: artifacts/rebel/calibration_scalar.json

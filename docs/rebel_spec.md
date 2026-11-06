@@ -1,3 +1,7 @@
+> **Superseded (2026-11-05):** the standalone REBEL pipeline described here (standardized scores, additive dual, `configs/rebel_*.yaml`,
+> `submit_rebel.sh`) was replaced by the six-arm study (`docs/sixarm_spec.md`: raw scores, GRPO's dual convention, `configs/sixarm/`).
+> Sections 1-3 and 7 remain the reference for the REBEL objective, pairing, loss and tests, which are unchanged.
+
 # Constrained REBEL: algorithm, configuration and controls (seed-42 comparison)
 
 Status: implemented and unit/CPU-tested; **no GPU job has been launched**. Paper: Gao et al., *REBEL: Reinforcement Learning via

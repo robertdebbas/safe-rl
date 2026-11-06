@@ -6,3 +6,10 @@ __pycache__/
 *.egg-info/
 .venv/
 .DS_Store
+# local runs, logs, caches, checkpoints and scratch (never commit models or evaluation dumps)
+logs/
+*.pt
+*.safetensors
+*.log
+.claude/
+*.jsonl.tmp
