@@ -1,0 +1,28 @@
+# REBEL pilot (lr / eta / gamma validation). 40 rollout batches on the 640 PILOT-TRAINING prompts (artifacts/sixarm_hpval: fresh unused
+# prompts, never in any main manifest) under the ACTUAL main-run schedule (cosine over 566 batches = 1,132 steps, 3 % warmup), so a pilot
+# is exactly the first 40 batches of a main run with these hyperparameters. Selection uses the 256 MONITORING prompts (the held-out
+# development set, never trained on): sampled at start and end, scored in-job by the Beaver evaluators (scripts/sixarm_hpval_devscore.py).
+# Launched by scripts/run_sixarm_hpval.sh rebel <lr> <eta> <gamma> scalar. Rule: docs/sixarm_spec.md section 3.
+base: ../rebel_common.yaml
+arm: scalar
+run_name: sixarm_hpval_rebel_scalar
+artifacts_dir: artifacts/sixarm_hpval
+score_units: raw
+dual_rule: grpo_log_lambda
+calibration_file: null
+scorer_rm_seed: 42
+scorer_checkpoints:
+  scalar: runs/rm_scalar_qwen2.5-1.5b_seed42/checkpoints/best
+max_rollout_batches: 40
+schedule_total_batches: 566           # the main run's schedule, not a 40-batch compressed one
+kl_to_initial_coef: 0.0               # overridden per pilot: 0 or 0.02
+kl_shaping_units: token_mean
+eval_every_batches: 1000              # monitor("start") and monitor("final") only
+monitor_at_start: true
+monitor_responses_per_prompt: 1       # 256 held-out development samples at start and end
+monitor_gen_batch: 32
+dump_every_batches: 0
+checkpoint_every_batches: 0
+checkpoint_at_batches: []
+resume_every_batches: 10
+collapse_check_every: 10

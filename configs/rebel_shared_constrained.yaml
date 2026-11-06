@@ -1,0 +1,8 @@
+# Arm B: shared-backbone constrained REBEL (frozen shared reward head + cost head).
+base: rebel_common.yaml
+arm: shared
+run_name: rebel_shared_constrained_qwen2.5-1.5b
+scorer_rm_seed: 42
+scorer_checkpoints:
+  shared: runs/rm_shared_qwen2.5-1.5b_seed42/checkpoints/best
+calibration_file: artifacts/rebel/calibration_shared.json

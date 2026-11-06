@@ -1,0 +1,20 @@
+# GRPO learning-rate pilot (3e-7 / 1e-6 / 3e-6): the UNCHANGED GRPO trainer, scalar arm, 40 batches on the pilot-training prompts under
+# the actual main-run schedule (cosine over 566 batches, 3 % warmup); 256 held-out development samples at start and end, saved and scored
+# in-job by the Beaver evaluators. Launched by scripts/run_sixarm_hpval.sh grpo <lr>.
+base: ../grpo_common.yaml
+arm: scalar
+run_name: sixarm_hpval_grpo_scalar
+artifacts_dir: artifacts/sixarm_hpval
+scorer_rm_seed: 42
+scorer_checkpoints:
+  scalar: runs/rm_scalar_qwen2.5-1.5b_seed42/checkpoints/best
+calibration_file: null
+max_rollout_batches: 40
+schedule_total_batches: 566
+eval_every_batches: 1000
+monitor_at_start: true
+monitor_responses_per_prompt: 1
+monitor_gen_batch: 32
+monitor_save_samples: true
+resume_every_batches: 10
+collapse_check_every: 10

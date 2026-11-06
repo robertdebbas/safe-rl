@@ -1,0 +1,9 @@
+# External evaluation of the REBEL arms (and the prepared matched-GRPO arms) with the UNCHANGED protocol of eval.yaml:
+# same 1,960 prompts, per-prompt seeds, sampling settings, Beaver evaluators and bootstrap. Outputs go to runs/eval/<method>/seed42.
+base: eval.yaml
+methods:
+  rebel_scalar:          {label: "Scalar RM + REBEL",            checkpoint: "runs/rebel_scalar_qwen2.5-1.5b_seed{seed}/checkpoints/final",                 seeds: [42], checkpoint_rule: rebel_final_1_prompt_epoch}
+  rebel_shared:          {label: "Shared constrained REBEL",     checkpoint: "runs/rebel_shared_constrained_qwen2.5-1.5b_seed{seed}/checkpoints/final",     seeds: [42], checkpoint_rule: rebel_final_1_prompt_epoch}
+  rebel_separate:        {label: "Separate constrained REBEL",   checkpoint: "runs/rebel_separate_constrained_qwen2.5-1.5b_seed{seed}/checkpoints/final",   seeds: [42], checkpoint_rule: rebel_final_1_prompt_epoch}
+  grpo_matched_shared:   {label: "Shared constrained GRPO (matched)",   checkpoint: "runs/grpo_matched_shared_constrained_qwen2.5-1.5b_seed{seed}/checkpoints/final",   seeds: [42], checkpoint_rule: grpo_final_1_prompt_epoch}
+  grpo_matched_separate: {label: "Separate constrained GRPO (matched)", checkpoint: "runs/grpo_matched_separate_constrained_qwen2.5-1.5b_seed{seed}/checkpoints/final", seeds: [42], checkpoint_rule: grpo_final_1_prompt_epoch}

@@ -1,0 +1,17 @@
+# ENGINEERING SMOKE of the evaluation pipeline: 0.5B base policy, tiny synthetic LlamaForScore-layout evaluators
+# (built by scripts/run_eval_smoke.sh), 8 prompts from the smoke artifacts, batch 2, 1 shard vs 2 shards must match.
+base: eval.yaml
+artifacts_dir: artifacts/smoke
+out_dir: runs/eval_smoke
+attn_implementation: eager
+generation: {max_prompt_length: 128, max_new_tokens: 24, temperature: 1.0, top_p: 1.0, batch_size: 2}
+evaluators:
+  reward: {model: runs/eval_smoke/tiny_evaluators/reward, revision: null}
+  cost:   {model: runs/eval_smoke/tiny_evaluators/cost, revision: null}
+  template: "BEGINNING OF CONVERSATION: USER: {prompt} ASSISTANT:{response}"
+  append_eos: true
+  max_length: 512
+  batch_size: 2
+bootstrap: {n_replicates: 200, seed: 12345, percentiles: [2.5, 97.5]}
+methods:
+  base: {label: "Base Qwen (0.5B smoke)", checkpoint: "Qwen/Qwen2.5-0.5B-Instruct", seeds: [0], checkpoint_rule: pretrained}

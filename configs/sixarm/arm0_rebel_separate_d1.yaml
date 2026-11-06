@@ -1,0 +1,16 @@
+# Six-arm study (seed 42, 200 rollout batches of 16 x 8 on the fixed artifacts/sixarm prompts; full 566-batch schedule, resumable).
+# Arm 0: constrained REBEL, separate R and C, d1 = mu_C - 0.5 sigma_C.
+base: ../rebel_common.yaml
+arm: separate
+run_name: sixarm_arm0_rebel_separate_d1
+artifacts_dir: artifacts/sixarm
+max_rollout_batches: 200              # stop after 200 batches; the LR schedule still spans the full 566-batch epoch (never compressed)
+checkpoint_at_batches: [100, 200]     # evaluated checkpoint = checkpoints/batch_00200 (rule after_batches:200); resume state continues to 566
+scorer_rm_seed: 42
+scorer_checkpoints:
+  reward: runs/rm_separate_reward_qwen2.5-1.5b_seed42/checkpoints/best
+  cost: runs/rm_separate_cost_qwen2.5-1.5b_seed42/checkpoints/best
+calibration_file: artifacts/sixarm/calibration_separate_d1.json
+score_units: raw                      # raw reward / cost scores, no standardization
+dual_rule: grpo_log_lambda            # GRPO's validated dual convention and hyperparameters (dual_learning_rate 0.01, cost_ema_decay 0.9, lambda_init 1)
+checkpoint_every_batches: 0

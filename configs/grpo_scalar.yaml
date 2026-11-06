@@ -1,0 +1,7 @@
+# Arm 2: single scalar RM + ordinary GRPO (no cost, no lambda, no threshold).
+base: grpo_common.yaml
+arm: scalar
+run_name: grpo_scalar_qwen2.5-1.5b
+scorer_rm_seed: 42                    # frozen scorer(s) = RM training seed 42, best-by-validation; identical for policy seeds 42/43/44
+scorer_checkpoints:
+  scalar: runs/rm_scalar_qwen2.5-1.5b_seed42/checkpoints/best      # frozen; RM seed 42 for every policy seed

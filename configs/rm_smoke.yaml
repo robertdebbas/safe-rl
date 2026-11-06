@@ -1,0 +1,13 @@
+# ENGINEERING SMOKE ONLY (Qwen2.5-0.5B, tiny subset, 4 steps). Use with --set arch=<scalar|shared|separate_reward|separate_cost>.
+base: rm_common.yaml
+arch: scalar
+run_name: rm_smoke_qwen2.5-0.5b
+artifacts_dir: artifacts/smoke
+model: Qwen/Qwen2.5-0.5B-Instruct
+max_epochs: 1
+max_steps: 4
+global_batch_size: 8
+per_device_batch_size: 2
+eval_batch_size: 4
+eval_every_steps: 2
+log_every: 1

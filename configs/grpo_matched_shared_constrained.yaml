@@ -1,0 +1,15 @@
+# Matched constrained-GRPO comparison for the REBEL study (PREPARED; launch only with approval). Inherits EVERY validated GRPO
+# policy-update setting from grpo_common.yaml; differs from the old GRPO runs only in: (1) the new REBEL training prompts (read from
+# artifacts/rebel by saferl.grpo_matched), (2) fixed standardized reward/cost (REBEL calibration), (3) d = -0.5 in standardized units,
+# (4) the additive projected dual (same as the REBEL arms). Group-normalized advantages are invariant to the standardization.
+base: grpo_common.yaml
+arm: shared
+run_name: grpo_matched_shared_constrained_qwen2.5-1.5b
+scorer_rm_seed: 42
+scorer_checkpoints:
+  shared: runs/rm_shared_qwen2.5-1.5b_seed42/checkpoints/best
+calibration_file: artifacts/rebel/calibration_shared.json
+d_std: -0.5
+lambda_init: 1.0
+dual_step_size: 0.01
+dual_projection: true

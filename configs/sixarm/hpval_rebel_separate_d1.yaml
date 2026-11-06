@@ -1,0 +1,27 @@
+# Constrained-objective pilot at the SELECTED REBEL hyperparameters: 40 batches of arm 0's objective (separate R and C, d1, GRPO's dual
+# convention) on the pilot-training prompts under the actual main-run schedule; same held-out development scoring as the scalar pilots.
+# Launched by scripts/run_sixarm_hpval.sh rebel <lr> <eta> <gamma> separate_d1.
+base: ../rebel_common.yaml
+arm: separate
+run_name: sixarm_hpval_rebel_separate_d1
+artifacts_dir: artifacts/sixarm_hpval
+score_units: raw
+dual_rule: grpo_log_lambda
+calibration_file: artifacts/sixarm/calibration_separate_d1.json
+scorer_rm_seed: 42
+scorer_checkpoints:
+  reward: runs/rm_separate_reward_qwen2.5-1.5b_seed42/checkpoints/best
+  cost: runs/rm_separate_cost_qwen2.5-1.5b_seed42/checkpoints/best
+max_rollout_batches: 40
+schedule_total_batches: 566
+kl_to_initial_coef: 0.0
+kl_shaping_units: token_mean
+eval_every_batches: 1000
+monitor_at_start: true
+monitor_responses_per_prompt: 1
+monitor_gen_batch: 32
+dump_every_batches: 0
+checkpoint_every_batches: 0
+checkpoint_at_batches: []
+resume_every_batches: 10
+collapse_check_every: 10

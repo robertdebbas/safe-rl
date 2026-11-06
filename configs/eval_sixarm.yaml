@@ -1,0 +1,13 @@
+# Six-arm study: external evaluation with the UNCHANGED protocol of eval.yaml (1,960 prompts, per-prompt seeds shared by every
+# method, T=1 / top_p=1 / 512 tokens, Beaver unified evaluators, 2,000 prompt-level bootstrap replicates). Every arm is evaluated at
+# the checkpoint written after exactly 200 rollout batches (rule after_batches:200). Paired comparisons: scripts/eval_pairs.py.
+base: eval.yaml
+methods:
+  base:                {label: "Base Qwen",                              checkpoint: "Qwen/Qwen2.5-1.5B-Instruct",                                          seeds: [0],  checkpoint_rule: pretrained}
+  sixarm_arm0:         {label: "Arm 0: constrained REBEL, separate, d1", checkpoint: "runs/sixarm_arm0_rebel_separate_d1_seed{seed}/checkpoints/batch_00200", seeds: [42], checkpoint_rule: "after_batches:200"}
+  sixarm_arm1:         {label: "Arm 1: constrained REBEL, separate, d0", checkpoint: "runs/sixarm_arm1_rebel_separate_d0_seed{seed}/checkpoints/batch_00200", seeds: [42], checkpoint_rule: "after_batches:200"}
+  sixarm_arm2:         {label: "Arm 2: REBEL, scalar RM",                checkpoint: "runs/sixarm_arm2_rebel_scalar_seed{seed}/checkpoints/batch_00200",      seeds: [42], checkpoint_rule: "after_batches:200"}
+  sixarm_arm3:         {label: "Arm 3: constrained GRPO, separate, d1",  checkpoint: "runs/sixarm_arm3_grpo_separate_d1_seed{seed}/checkpoints/batch_00200",  seeds: [42], checkpoint_rule: "after_batches:200"}
+  sixarm_arm4:         {label: "Arm 4: constrained GRPO, separate, d0",  checkpoint: "runs/sixarm_arm4_grpo_separate_d0_seed{seed}/checkpoints/batch_00200",  seeds: [42], checkpoint_rule: "after_batches:200"}
+  sixarm_arm5:         {label: "Arm 5: GRPO, scalar RM",                 checkpoint: "runs/sixarm_arm5_grpo_scalar_seed{seed}/checkpoints/batch_00200",       seeds: [42], checkpoint_rule: "after_batches:200"}
+paired_comparisons: [[sixarm_arm0, sixarm_arm3], [sixarm_arm1, sixarm_arm4], [sixarm_arm2, sixarm_arm5], [sixarm_arm0, sixarm_arm1], [sixarm_arm3, sixarm_arm4]]

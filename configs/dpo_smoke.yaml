@@ -1,0 +1,46 @@
+# ENGINEERING SMOKE TEST ONLY (numbers are not scientific). Runs on a laptop (MPS/CPU) with Qwen2.5-0.5B-Instruct.
+# For a 1.5B smoke on the GPU box: --set model=Qwen/Qwen2.5-1.5B-Instruct artifacts_dir=artifacts/smoke_1p5b
+run_name: smoke_qwen2.5-0.5b
+runs_dir: runs
+artifacts_dir: artifacts/smoke       # produced by scripts/prepare_data.py --config configs/data_smoke.yaml
+
+model: Qwen/Qwen2.5-0.5B-Instruct
+full_finetune: true
+seed: 42
+
+beta: 0.1
+loss_type: sigmoid
+label_smoothing: 0.0
+
+max_epochs: 1
+max_steps: 4
+global_batch_size: 8
+per_device_batch_size: 2
+eval_batch_size: 2
+
+learning_rate: 5.0e-7
+optimizer: adamw
+adam_beta1: 0.9
+adam_beta2: 0.999
+adam_epsilon: 1.0e-8
+weight_decay: 0.0
+lr_scheduler: cosine
+warmup_ratio: 0.03
+max_grad_norm: 1.0
+
+precision: bf16
+gradient_checkpointing: true
+device: auto
+
+max_prompt_length: null
+max_length: null
+
+eval_every_steps: 2
+checkpoint_keep: [best, last, epoch_end]
+checkpoint_dtype: bfloat16
+log_every: 1
+
+precompute_ref_logprobs: true
+ref_cache_dir: artifacts/smoke/ref_logprobs
+
+eval_splits: [val, test_representative, test_balanced]

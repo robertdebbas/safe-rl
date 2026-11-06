@@ -1,0 +1,25 @@
+# Data preparation for Arm 1 (vanilla DPO). Fully deterministic given revision + data_seed.
+dataset: PKU-Alignment/PKU-SafeRLHF
+config: default                       # union of Alpaca-7B, Alpaca2-7B, Alpaca3-8B (the FULL official dataset)
+revision: 9421ffafec3fa40a1f1a7d567b4d525079477ecb   # pinned dataset commit on the Hub
+data_seed: 42
+tokenizer: Qwen/Qwen2.5-1.5B-Instruct # exact tokenizer used for the length audit and training
+out_dir: artifacts
+
+# Length audit: choose the smallest candidate covering >= coverage_target of eligible sequences.
+prompt_length_candidates: [512, 768, 1024, 1536]
+total_length_candidates: [1024, 1536, 2048, 3072, 4096]
+coverage_target: 0.99
+max_exclusion_fraction: 0.01          # stop (do not sample) if more than this would be excluded
+allow_large_exclusion: false
+length_limits: null                   # {max_prompt_length: ..., max_length: ...} to override the audit
+
+max_pairs_per_prompt: null            # no per-prompt cap (set an int to enable; reported either way)
+
+splits:
+  train:               {agreement: 5000, conflict: 5000}
+  val:                 {agreement: 1000, conflict: 1000}
+  test_balanced:       {agreement: 1000, conflict: 1000}
+  test_representative: {total: 2000}  # natural agreement/conflict proportions of the eligible official test pool
+
+n_serialized_examples: 4              # both DPO rows of one agreement pair and one conflict pair

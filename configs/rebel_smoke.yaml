@@ -1,0 +1,24 @@
+# ENGINEERING SMOKE ONLY (CPU tiny test / laptop): small batches, short completions, few rollout batches. Not a scientific setting.
+base: rebel_common.yaml
+arm: scalar
+run_name: rebel_smoke
+artifacts_dir: artifacts/smoke
+policy_model: Qwen/Qwen2.5-0.5B-Instruct
+prompt_batch_size: 4
+group_size: 4
+pairs_per_minibatch: 4
+policy_micro_batch_size: 4
+generation: {max_prompt_length: 128, max_completion_length: 48, temperature: 1.0, top_p: 1.0, repetition_penalty: 1.0, do_sample: true}
+max_rollout_batches: 3
+attn_implementation: eager
+eval_every_batches: 2
+monitor_responses_per_prompt: 2
+monitor_gen_batch: 8
+dump_every_batches: 2
+dump_n_prompts: 4
+checkpoint_every_batches: 2
+resume_every_batches: 2
+scorer_batch_size: 8
+scorer_rm_seed: 42
+scorer_checkpoints: {scalar: runs/rm_smoke_scalar_qwen2.5-0.5b_seed42/checkpoints/best}
+calibration_file: artifacts/smoke/rebel/calibration_scalar.json

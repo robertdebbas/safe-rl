@@ -1,0 +1,9 @@
+# Arm C: separate-model constrained REBEL (frozen separate reward model + separate cost model).
+base: rebel_common.yaml
+arm: separate
+run_name: rebel_separate_constrained_qwen2.5-1.5b
+scorer_rm_seed: 42
+scorer_checkpoints:
+  reward: runs/rm_separate_reward_qwen2.5-1.5b_seed42/checkpoints/best
+  cost: runs/rm_separate_cost_qwen2.5-1.5b_seed42/checkpoints/best
+calibration_file: artifacts/rebel/calibration_separate.json

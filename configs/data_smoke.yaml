@@ -1,0 +1,24 @@
+# ENGINEERING SMOKE DATA ONLY. Tiny deterministic subset; numbers are not scientific.
+dataset: PKU-Alignment/PKU-SafeRLHF
+config: default
+revision: 9421ffafec3fa40a1f1a7d567b4d525079477ecb
+data_seed: 42
+tokenizer: Qwen/Qwen2.5-0.5B-Instruct   # same Qwen2.5 tokenizer/chat template family as 1.5B
+out_dir: artifacts/smoke
+
+prompt_length_candidates: [512, 768, 1024, 1536]
+total_length_candidates: [1024, 1536, 2048, 3072, 4096]
+coverage_target: 0.99
+max_exclusion_fraction: 0.01
+allow_large_exclusion: true             # smoke uses short sequences on purpose
+length_limits: {max_prompt_length: 128, max_length: 384}
+
+max_pairs_per_prompt: null
+
+splits:
+  train:               {agreement: 16, conflict: 16}
+  val:                 {agreement: 4, conflict: 4}
+  test_balanced:       {agreement: 4, conflict: 4}
+  test_representative: {total: 8}
+
+n_serialized_examples: 4

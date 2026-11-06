@@ -1,0 +1,8 @@
+# Arm 3: shared-backbone two-head RM (R, C) + constrained GRPO.
+base: grpo_common.yaml
+arm: shared
+run_name: grpo_shared_constrained_qwen2.5-1.5b
+scorer_rm_seed: 42                    # frozen scorer(s) = RM training seed 42, best-by-validation; identical for policy seeds 42/43/44
+scorer_checkpoints:
+  shared: runs/rm_shared_qwen2.5-1.5b_seed42/checkpoints/best      # frozen; RM seed 42 for every policy seed
+calibration_file: artifacts/grpo/calibration_shared.json           # d_shared from scripts/run_grpo_calibrate.sh shared

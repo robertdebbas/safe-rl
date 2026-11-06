@@ -1,0 +1,22 @@
+# ENGINEERING SMOKE ONLY: 0.5B policy, the 0.5B smoke RMs, tiny prompt sets, short completions, 3 rollout batches.
+# Use with --set arm=<scalar|shared|separate> (scorer checkpoints / calibration chosen by scripts/run_grpo_smoke.sh).
+base: grpo_common.yaml
+arm: scalar
+run_name: grpo_smoke
+artifacts_dir: artifacts/smoke
+policy_model: Qwen/Qwen2.5-0.5B-Instruct
+prompt_batch_size: 4
+group_size: 8
+groups_per_minibatch: 2
+policy_micro_batch_size: 4
+generation: {max_prompt_length: 128, max_completion_length: 48, temperature: 1.0, top_p: 1.0, repetition_penalty: 1.0, do_sample: true}
+max_rollout_batches: 3
+attn_implementation: eager            # laptop MPS workaround (sdpa + left padding gives NaN samples on MPS); leave null on CUDA
+eval_every_batches: 2
+monitor_responses_per_prompt: 2
+monitor_gen_batch: 8
+resume_every_batches: 2
+scorer_batch_size: 8
+scorer_rm_seed: 42                    # frozen scorer(s) = RM training seed 42, best-by-validation; identical for policy seeds 42/43/44
+scorer_checkpoints: {scalar: runs/rm_smoke_scalar_qwen2.5-0.5b_seed42/checkpoints/best}
+calibration_file: null

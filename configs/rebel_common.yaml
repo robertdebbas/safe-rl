@@ -1,0 +1,81 @@
+# Common policy-training configuration for ALL REBEL arms (scalar REBEL, shared constrained, separate constrained).
+# Arm configs inherit this file and only set arm / run_name / scorer checkpoints / calibration file. Do not edit per arm.
+runs_dir: runs
+artifacts_dir: artifacts              # fixed manifests: artifacts/rebel/{train,calibration,monitoring}_prompts.jsonl (new, unused prompts)
+data_seed: 42
+
+policy_model: Qwen/Qwen2.5-1.5B-Instruct   # initial policy pi_0 AND frozen reference pi_0 for KL monitoring (same checkpoint)
+seed: 42                              # policy-training seed (prompt order, sampling, pairing, optimizer)
+
+prompt_epochs: 1                      # exactly one pass over the training prompts (same prompts and order for every arm)
+prompt_batch_size: 16                 # B prompts per rollout batch
+group_size: 8                         # G completions per prompt from the current policy pi_t -> G/2 = 4 disjoint pairs per prompt
+pairs_per_minibatch: 32               # 64 pairs per full batch -> 2 optimizer steps per rollout batch (matches the GRPO update count)
+inner_epochs: 1                       # every pair used exactly once (reference code uses 4; see docs/rebel_spec.md)
+policy_micro_batch_size: 8            # trajectories per forward/backward (4 pairs); gradient accumulation inside a minibatch
+
+generation:                           # identical to the GRPO arms and the external evaluation
+  max_prompt_length: 512
+  max_completion_length: 512
+  temperature: 1.0
+  top_p: 1.0
+  repetition_penalty: 1.0
+  do_sample: true                     # top_k is pinned to 0 inside generate_completions (Qwen's packaged top_k=20 cannot leak)
+
+# REBEL regression (paper Eq. 1, 1/eta form): loss = mean_pairs [ ((dl(y1) - dl(y2)) / eta - z)^2 ], dl = l_theta - l_t (sequence SUMS)
+rebel_eta: 1.0                        # proximal parameter (paper default; distinct from the AdamW learning rate)
+kl_to_initial_coef: 0.0               # OFF. > 0 shapes r <- r - coef * (log pi_t - log pi_0) (paper Eq. 22) as a separate explicit option
+kl_shaping_units: token_mean          # token_mean (per-token weighting, mirrors GRPO's beta) | sequence_sum (the paper's literal form)
+post_update_pass: true                # one extra no-grad pass after the primal steps: KL(pi_t || pi_{t+1}) and post-update regression fit
+
+# constraint (constrained arms only), standardized units: maximize E[R~] s.t. E[C~] <= d_std  (earlier proposal; the six-arm study
+# overrides these to score_units: raw + dual_rule: grpo_log_lambda, see configs/sixarm/)
+score_units: standardized             # raw | standardized
+dual_rule: additive_projected         # grpo_log_lambda | additive_projected
+d_std: -0.5                           # <=> raw d = mu_C - 0.5 sigma_C (per arm's own cost model, same physical calibration responses)
+lambda_init: 1.0
+dual_step_size: 0.01                  # additive: lambda <- max(0, lambda + step (C_hat - d)); C_hat = mean standardized cost of ALL 128 rollouts of pi_t
+dual_projection: true
+dual_learning_rate: 0.01              # grpo_log_lambda: mu <- mu + eta * lambda * (C_ema - d), lambda = exp(mu)  (GRPO's validated convention)
+cost_ema_decay: 0.9
+checkpoint_at_batches: []             # explicit extra checkpoints (fixed-budget studies), e.g. [100, 200]
+
+# policy optimizer (identical for all arms; same values as the GRPO arms)
+learning_rate: 1.0e-6
+adam_beta1: 0.9
+adam_beta2: 0.999
+adam_epsilon: 1.0e-8
+weight_decay: 0.0
+lr_scheduler: cosine
+warmup_ratio: 0.03
+max_grad_norm: 1.0
+precision: bf16                       # bf16 autocast; fp32 master weights + optimizer state
+generation_precision: null
+attn_implementation: null
+gradient_checkpointing: true
+device: auto
+ref_device: null
+scorer_device: null
+scorer_batch_size: 16
+
+# monitoring / dumps / checkpoints / resume
+eval_every_batches: 100               # monitoring: 256 monitoring prompts x 4 samples (scores, KL to pi_0, lengths, style) + samples saved
+monitor_responses_per_prompt: 4
+monitor_gen_batch: 32
+monitor_at_start: true
+dump_every_batches: 25                # light divergence trace: 32 monitoring prompts x 1 sample with scores and style features
+dump_n_prompts: 32
+checkpoint_every_batches: 100         # intermediate bf16 policy checkpoints (checkpoints/batch_00100, ...); the eval refuses them
+resume_every_batches: 25
+resume: true
+checkpoint_dtype: bfloat16
+log_every_batches: 1
+max_rollout_batches: null             # smoke only
+
+# gate diagnostic / collapse monitoring (engineering safeguards; no effect on the objective)
+stop_after_batches: null              # 100: train N batches, save resume state, run the gate diagnostic, exit 0 (pass) / 2 (fail)
+diagnostic: {n_samples: 32, seed: 4242}
+diagnostic_gates: {}                  # hard failures only (NaN/Inf, invalid log-probs, broken dual, checkpoint corruption); everything else is reported
+collapse_check_every: 50
+collapse_probe_trajectories: 32
+collapse: {}

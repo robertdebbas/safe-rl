@@ -1,0 +1,9 @@
+# Arm 4: two independent models (R, C) + constrained GRPO.
+base: grpo_common.yaml
+arm: separate
+run_name: grpo_separate_constrained_qwen2.5-1.5b
+scorer_rm_seed: 42                    # frozen scorer(s) = RM training seed 42, best-by-validation; identical for policy seeds 42/43/44
+scorer_checkpoints:
+  reward: runs/rm_separate_reward_qwen2.5-1.5b_seed42/checkpoints/best
+  cost: runs/rm_separate_cost_qwen2.5-1.5b_seed42/checkpoints/best
+calibration_file: artifacts/grpo/calibration_separate.json         # d_separate from scripts/run_grpo_calibrate.sh separate

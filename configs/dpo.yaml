@@ -1,0 +1,53 @@
+# Arm 1: vanilla sigmoid DPO, full-parameter fine-tuning of Qwen2.5-1.5B-Instruct.
+# Primary scientific configuration. Run three seeds (42, 43, 44) with --seed; data split is fixed (data_seed=42).
+run_name: dpo_qwen2.5-1.5b
+runs_dir: runs
+artifacts_dir: artifacts
+
+model: Qwen/Qwen2.5-1.5B-Instruct    # initial policy pi_0 AND frozen reference pi_ref (same checkpoint)
+full_finetune: true                  # no LoRA
+seed: 42                             # training seed only; override with --seed 43 / 44
+
+# DPO objective
+beta: 0.1
+loss_type: sigmoid
+label_smoothing: 0.0
+
+# schedule
+max_epochs: 2                        # a MAXIMUM; checkpoint is selected by combined validation loss
+max_steps: null
+global_batch_size: 64                # preference rows per optimizer step
+per_device_batch_size: 4             # micro-batch; gradient_accumulation = 64 / (4 * world_size) = 16 on one GPU
+eval_batch_size: 8
+
+# optimizer
+learning_rate: 5.0e-7
+optimizer: adamw
+adam_beta1: 0.9
+adam_beta2: 0.999
+adam_epsilon: 1.0e-8
+weight_decay: 0.0
+lr_scheduler: cosine
+warmup_ratio: 0.03
+max_grad_norm: 1.0
+
+# numerics
+precision: bf16                      # bf16 autocast for forward/backward; master weights + AdamW states in fp32
+gradient_checkpointing: true
+device: auto
+
+# lengths: null -> read artifacts/length_limits.json produced by the data audit (512 / 1024)
+max_prompt_length: null
+max_length: null
+
+# validation / checkpoints
+eval_every_steps: 100                # plus end of every epoch
+checkpoint_keep: [best, last, epoch_end]
+checkpoint_dtype: bfloat16
+log_every: 10
+
+# frozen reference log-probs are computed once (model at init) and cached, shared across seeds
+precompute_ref_logprobs: true
+ref_cache_dir: artifacts/ref_logprobs
+
+eval_splits: [val, test_representative, test_balanced]

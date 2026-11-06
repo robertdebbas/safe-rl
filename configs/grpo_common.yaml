@@ -1,0 +1,69 @@
+# Common policy-training configuration for ALL GRPO-based arms (scalar GRPO, shared constrained, separate constrained).
+# Arm configs inherit this file and only set arm / run_name / scorer checkpoints / calibration file.
+runs_dir: runs
+artifacts_dir: artifacts              # fixed manifests: artifacts/grpo/{train,calibration,monitoring}_prompts.jsonl
+data_seed: 42
+
+policy_model: Qwen/Qwen2.5-1.5B-Instruct   # initial policy pi_0 AND frozen reference pi_ref (same checkpoint)
+seed: 42                              # policy-training seed (prompt order, sampling, optimizer); override with --seed
+
+prompt_epochs: 1                      # exactly one pass over the 9,054 unique training prompts
+prompt_batch_size: 16                 # B prompts per rollout batch
+group_size: 8                         # G completions per prompt (same pi_old snapshot)
+groups_per_minibatch: 8               # 8 groups x 8 = 64 trajectories per optimizer step -> 2 steps per full rollout batch
+policy_micro_batch_size: 8            # trajectories per forward/backward (gradient accumulation inside a minibatch)
+
+generation:
+  max_prompt_length: 512
+  max_completion_length: 512
+  temperature: 1.0
+  top_p: 1.0
+  repetition_penalty: 1.0
+  do_sample: true
+
+advantage_eps: 1.0e-6                 # scalar: A = (F - mean_g) / (std_g + eps). Constrained (revision 2026-11-01): A = A_R - lambda * A_C with
+                                      # A_R, A_C each group-normalized separately (population std + eps); zero-variance component -> 0
+clip_epsilon: 0.2
+beta_kl: 0.02                         # sampled non-negative KL to pi_ref: exp(d) - d - 1, d = logp_ref - logp_policy
+
+# dual (constrained arms only)
+lambda_init: 1.0
+dual_learning_rate: 0.01              # mu <- mu + eta * lambda * (C_ema - d), lambda = exp(mu), once per rollout batch
+cost_ema_decay: 0.9
+
+# policy optimizer (identical for all arms)
+learning_rate: 1.0e-6
+adam_beta1: 0.9
+adam_beta2: 0.999
+adam_epsilon: 1.0e-8
+weight_decay: 0.0
+lr_scheduler: cosine
+warmup_ratio: 0.03
+max_grad_norm: 1.0
+precision: bf16                       # bf16 autocast; fp32 master weights + optimizer state
+generation_precision: null            # null -> same as precision (bf16)
+attn_implementation: null             # null -> transformers default (sdpa on CUDA). Apple MPS needs "eager" for left-padded generation
+gradient_checkpointing: true
+device: auto
+ref_device: null                      # null -> same device; set e.g. cuda:1 to place the frozen reference elsewhere
+scorer_device: null                   # null -> same device; frozen RM/CM placement
+scorer_batch_size: 16
+
+# monitoring (diagnostic) and resume
+eval_every_batches: 100
+monitor_responses_per_prompt: 4
+monitor_gen_batch: 32
+monitor_at_start: true
+resume_every_batches: 25
+resume: true
+checkpoint_dtype: bfloat16
+log_every_batches: 1
+max_rollout_batches: null             # smoke only
+
+# gate diagnostic / collapse monitoring (engineering safeguards; no effect on the objective)
+stop_after_batches: null              # e.g. 100: train N batches, save resume state, run the gate diagnostic, exit 0 (pass) / 2 (fail)
+diagnostic: {n_samples: 32, seed: 4242}
+diagnostic_gates: {}                  # revision 2026-11-01: no numerical gate; automatic decision = hard failures (NaN/Inf/OOM) only. Tail mass, KL, truncation, coherence: reported
+collapse_check_every: 50              # during the continuation: probe the current rollout batch every N batches
+collapse_probe_trajectories: 32
+collapse: {}                          # auto-stop only on a clear catastrophic failure (non-finite values) -> exit 3; tail mass reported

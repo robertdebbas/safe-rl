@@ -1,0 +1,39 @@
+# Common external evaluation of every method with the frozen PKU Beaver evaluators. Training RM/CMs are never used here.
+artifacts_dir: artifacts              # artifacts/eval/eval_prompts.jsonl = test_representative deduplicated by normalized prompt (1,960)
+out_dir: runs/eval
+device: auto
+precision: bf16
+attn_implementation: null             # Apple MPS needs "eager" for left-padded generation (smoke only)
+
+eval_seed: 20261030                   # global evaluation-generation seed; per-prompt seed = sha256(eval_seed:prompt_hash), same for ALL methods/seeds
+
+generation:
+  max_prompt_length: 512
+  max_new_tokens: 512
+  temperature: 1.0
+  top_p: 1.0
+  batch_size: 20                      # FIXED batches of consecutive manifest prompts; shards are whole batches -> 1,960 / 20 = 98 batches
+
+evaluators:
+  reward: {model: PKU-Alignment/beaver-7b-unified-reward, revision: 3fa3ece212e726714951f46f64446b3dbd8af3ae}   # higher = more helpful
+  cost:   {model: PKU-Alignment/beaver-7b-unified-cost,   revision: 83c5825b40d652ac592333c3469ad89fd6439182}   # higher = more harmful
+  template: "BEGINNING OF CONVERSATION: USER: {prompt} ASSISTANT:{response}"
+  append_eos: true                    # Safe-RLHF training convention: sequences end with </s>; score read at the last token
+  max_length: 2048                    # LLaMA context of the evaluators
+  batch_size: 16
+
+bootstrap:
+  n_replicates: 2000
+  seed: 12345
+  percentiles: [2.5, 97.5]
+
+# PRIMARY checkpoint rule (symmetric, pre-specified): every trained arm is evaluated at its FINAL checkpoint
+#   DPO  -> checkpoints/final = end of exactly 2 epochs      (checkpoints/best is a DIAGNOSTIC artifact only; refused here)
+#   GRPO -> checkpoints/final = end of exactly 1 prompt epoch
+# eval_generate verifies the rule from each checkpoint's trainer_state.json and refuses any 'best' path.
+methods:
+  base:          {label: "Base Qwen",                 checkpoint: "Qwen/Qwen2.5-1.5B-Instruct",                                            seeds: [0],          checkpoint_rule: pretrained}
+  dpo:           {label: "DPO",                       checkpoint: "runs/dpo_qwen2.5-1.5b_seed{seed}/checkpoints/final",                      seeds: [42, 43, 44], checkpoint_rule: dpo_final_2_epochs}
+  grpo_scalar:   {label: "Scalar RM + GRPO",          checkpoint: "runs/grpo_scalar_qwen2.5-1.5b_seed{seed}/checkpoints/final",              seeds: [42, 43, 44], checkpoint_rule: grpo_final_1_prompt_epoch}
+  grpo_shared:   {label: "Shared constrained GRPO",   checkpoint: "runs/grpo_shared_constrained_qwen2.5-1.5b_seed{seed}/checkpoints/final",  seeds: [42, 43, 44], checkpoint_rule: grpo_final_1_prompt_epoch}
+  grpo_separate: {label: "Separate constrained GRPO", checkpoint: "runs/grpo_separate_constrained_qwen2.5-1.5b_seed{seed}/checkpoints/final", seeds: [42, 43, 44], checkpoint_rule: grpo_final_1_prompt_epoch}

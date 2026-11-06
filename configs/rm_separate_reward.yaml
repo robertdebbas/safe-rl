@@ -1,0 +1,4 @@
+# Architecture: separate_reward  (see src/saferl/rm_data.py ARCHITECTURES). All optimization hyperparameters come from rm_common.yaml.
+base: rm_common.yaml
+arch: separate_reward
+run_name: rm_separate_reward_qwen2.5-1.5b

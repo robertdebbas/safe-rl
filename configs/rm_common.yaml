@@ -1,0 +1,44 @@
+# Common scientific hyperparameters for ALL reward/cost-model architectures (A scalar, B shared, C separate).
+# Architecture configs inherit this file via `base:` and only set arch / run_name. Do not edit per architecture.
+runs_dir: runs
+artifacts_dir: artifacts              # the SAME manifests as the DPO arm (data_seed 42; never resampled)
+data_seed: 42
+
+model: Qwen/Qwen2.5-1.5B-Instruct     # backbone for every score model; separate R and C both start from it
+full_finetune: true
+seed: 42                              # training seed only; override with --seed 43 / 44
+
+max_epochs: 2
+max_steps: null
+global_batch_size: 64                 # preference comparisons per optimizer step
+per_device_batch_size: 4              # gradient_accumulation = 64 / (4 * world_size) = 16 on one GPU
+eval_batch_size: 8
+
+optimizer: adamw
+learning_rate: 2.0e-5
+adam_beta1: 0.9
+adam_beta2: 0.95
+adam_epsilon: 1.0e-8
+weight_decay: 0.1
+weight_decay_exclude_bias_and_norm: true   # decay on matrices only (biases, RMSNorm weights, head bias excluded)
+lr_scheduler: cosine
+warmup_ratio: 0.03
+max_grad_norm: 1.0
+
+# PRIMARY cost supervision is pairwise Bradley-Terry only: L_C = -log sigmoid(C(y_harmful) - C(y_safer)), y_safer from
+# safer_response_id. The Safe-RLHF-style pointwise safe/unsafe anchoring (PKU is_response_X_safe labels) is an OPTIONAL
+# ablation and must stay false here so every architecture sees exactly the same pairwise information.
+cost_pointwise_classification: false
+
+precision: bf16                       # bf16 autocast; fp32 master weights + optimizer state; heads computed in fp32
+gradient_checkpointing: true
+device: auto
+
+max_prompt_length: null               # null -> artifacts/length_limits.json from the DPO audit (512 / 1024)
+max_length: null
+
+eval_every_steps: 100                 # plus end of each epoch
+checkpoint_keep: [best, last, epoch_end]
+checkpoint_dtype: bfloat16
+log_every: 10
+eval_splits: [val, test_representative, test_balanced]
