@@ -16,6 +16,7 @@ GRPO rule: largest lr in {3e-7, 1e-6, 3e-6} passing every gate (none -> 1e-6, th
 from __future__ import annotations
 
 import json
+import os
 import re
 import statistics
 import sys
@@ -65,12 +66,15 @@ def gates(s: dict) -> dict:
     return g
 
 
+WAIVED = tuple(g for g in os.environ.get("SIXARM_WAIVE_GATES", "").split(",") if g)   # explicit, recorded waiver (e.g. G1_fit); never default
+
+
 def passed(s: dict, skip=()) -> bool:
-    return all(v is True for k, v in gates(s).items() if k not in skip)
+    return all(v is True for k, v in gates(s).items() if k not in skip and k not in WAIVED)
 
 
 def select(summaries: list[dict]) -> dict:
-    out = {"gates": GATES}
+    out = {"gates": GATES, "waived_gates": list(WAIVED)}
     sc = [s for s in summaries if s["family"] == "rebel" and s["arm"] == "scalar"]
     base = [s for s in sc if s["eta"] == 1.0 and s["gamma"] == 0.0]
     if base:
